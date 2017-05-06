@@ -10,6 +10,8 @@ class UserChat:
         self.id = chat_id
         self.state = 'init'
         self.login_data = None
+        self.games_to_move = 0
+        # todo change # of games to move check to last update check
 
 class Bot:
     def __init__(self):
@@ -101,6 +103,8 @@ class Bot:
     def check(self, bot, job):
         my_turn_games = parser.check(self.users[job.context].login_data)
         if my_turn_games > 0:
-            bot.sendMessage(chat_id=job.context, text='%d games to make move' % my_turn_games)
+            if self.users[job.context].games_to_move != my_turn_games:
+                bot.sendMessage(chat_id=job.context, text='%d games to make move' % my_turn_games)
+        self.users[job.context].games_to_move = my_turn_games
 
 b = Bot()
