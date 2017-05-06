@@ -1,5 +1,3 @@
 python-telegram-bot
 beautifulsoup4
 mechanize
-cookielib
-logging
