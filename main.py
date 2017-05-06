@@ -1,4 +1,5 @@
 import logging
+import os
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, Job, MessageHandler, Filters, CallbackQueryHandler, JobQueue
@@ -15,7 +16,7 @@ class UserChat:
 
 class Bot:
     def __init__(self):
-        self.updater = Updater('351269578:AAEtQL3Uita6TrDoy_uCygBntm27POtOlqI')
+        self.updater = Updater(os.environ['APP_TOKEN'])
         self.dispatcher = self.updater.dispatcher
 
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
