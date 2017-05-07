@@ -63,6 +63,7 @@ class Bot:
         for row in self.cursor:
             self.users[row[1]] = UserChat(row[1], self)
             self.check_start(self._bot, row[1])
+            # todo distributed in time checks
 
         self.logger = logging.getLogger(__name__)
 
