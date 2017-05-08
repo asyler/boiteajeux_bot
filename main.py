@@ -24,6 +24,7 @@ class UserChat:
             query = "INSERT INTO users (chat_id) VALUES (%d)" % chat_id
             self.bot.cursor.execute(query)
             self.bot.cnx.commit()
+            self.login_data = [None, None]
             self.watching = 0
         else:
             data = self.bot.cursor.fetchone()
