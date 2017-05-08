@@ -39,8 +39,15 @@ def check(data):
     for row in games_list.find_all('div',recursive=False):
         if row['class'][0].startswith('clLigne'):
             # lines with games
-            span = row.find('a').find('span')
-            if span:
+            game = {}
+            num_span = row.find('a').find('span')
+            if num_span:
                 # span with red color = your turn
-                my_turn_games.append(span.text)
-    return len(my_turn_games)
+                # no red color = no span, just text
+                game['num'] =num_span.text
+                name_span = row.find_all('div', class_="clLigneBloc")[1].find('span')
+                game['name'] = name_span.text
+                game['url'] = row.find('a')['href']
+
+                my_turn_games.append(game)
+    return my_turn_games
