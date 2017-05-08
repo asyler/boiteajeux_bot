@@ -1,4 +1,6 @@
 import logging
+import random
+
 import mysql.connector
 import os
 import re
@@ -14,6 +16,7 @@ class UserChat:
         self.id = chat_id
         self.state = 'init'
         self.login_data = None
+        self.alert_message = None
         self.games_to_move = 0
         # todo change # of games to move check to last update check
         self.bot = bot
@@ -24,6 +27,7 @@ class UserChat:
             query = "INSERT INTO users (chat_id) VALUES (%d)" % chat_id
             self.bot.cursor.execute(query)
             self.bot.cnx.commit()
+            self.login_data = [None, None]
             self.watching = 0
         else:
             data = self.bot.cursor.fetchone()
@@ -92,6 +96,7 @@ class Bot:
 
     def start(self, bot, update):
         self.users[update.message.chat_id] = UserChat(update.message.chat_id, self)
+        self.users[update.message.chat_id].alert_message = None
         login_data = self.get_login_data(update.message.chat_id)
         if not login_data[0]:
             inline_keyboard = [[
@@ -116,11 +121,13 @@ class Bot:
             self.check_start(bot, update.callback_query.from_user.id)
 
     def login_start(self, bot, chat_id):
+        self.users[chat_id].alert_message = None
         self.users[chat_id].login_data = []
         bot.sendMessage(chat_id, 'Print your login')
         self.users[chat_id].state = 'login'
 
     def reply_to_query(self, bot, update):
+        self.users[update.message.chat_id].alert_message = None
         if self.users[update.message.chat_id].state=='login':
             self.users[update.message.chat_id].login_data.append(update.message.text)
             update.message.reply_text('Print your password')
@@ -133,6 +140,7 @@ class Bot:
             self.users[update.message.chat_id].state = 'start'
 
     def check_login(self, bot, chat_id):
+        self.users[chat_id].alert_message = None
         if parser.check_login(self.get_login_data(chat_id)):
             bot.sendMessage(chat_id, 'It works')
         else:
@@ -145,11 +153,30 @@ class Bot:
         job_alarm = Job(self.check, 180.0, context=chat_id)
         job_queue.put(job_alarm, next_t=0)
 
+
     def check(self, bot, job):
         my_turn_games = parser.check(self.users[job.context].login_data)
-        if my_turn_games > 0:
-            if self.users[job.context].games_to_move != my_turn_games:
-                bot.sendMessage(chat_id=job.context, text='%d games to make move' % my_turn_games)
-        self.users[job.context].games_to_move = my_turn_games
+        my_turn_games_count = len(my_turn_games)
+        if self.users[job.context].games_to_move != my_turn_games_count:
+            if my_turn_games_count > 0:
+                inline_keyboard = []
+                for game in my_turn_games:
+                    name = game['name'] if game['name'] else '*** NO NAME ***'
+                    inline_keyboard.append([InlineKeyboardButton(text=name,
+                     url='http://www.boiteajeux.net/'+game['url'],
+                     callback_data='login')])
+                if not self.users[job.context].alert_message or self.users[job.context].games_to_move < my_turn_games_count:
+                    self.users[job.context].alert_message = bot.sendMessage(chat_id=job.context,
+                                text='%d games to make move' % my_turn_games_count,
+                                reply_markup=InlineKeyboardMarkup(inline_keyboard))
+                else:
+                    self.users[job.context].alert_message.edit_text(
+                        text='%d games to make move' % my_turn_games_count,
+                        reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            elif self.users[job.context].alert_message:
+                self.users[job.context].alert_message.edit_text(text='Good job! No games to make move')
+
+
+        self.users[job.context].games_to_move = my_turn_games_count
 
 b = Bot()
